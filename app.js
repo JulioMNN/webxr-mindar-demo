@@ -1,79 +1,84 @@
 
-/* =========================
-   STATE
-========================= */
-
 let selectedMode = null;
 let arStarted = false;
-let state = "IDLE";
 
-/* =========================
-   ELEMENTS
-========================= */
-
+const permissionScreen = document.getElementById("permissionScreen");
 const ui = document.getElementById("ui");
 const status = document.getElementById("status");
 const startBtn = document.getElementById("startBtn");
 
-const model = document.getElementById("modelEntity");
-const video = document.getElementById("videoEntity");
-const info = document.getElementById("infoEntity");
-
-const videoEl = document.querySelector("#video");
-const sceneEl = document.querySelector("a-scene");
+const scene = document.querySelector("#scene");
 const anchor = document.querySelector("#anchor");
 
+const model = document.querySelector("#modelEntity");
+const video = document.querySelector("#videoEntity");
+const info = document.querySelector("#infoEntity");
+
+const videoEl = document.querySelector("#video");
+
 /* =========================
-   UI LOGIC
+   STEP 1: CAMERA
 ========================= */
 
-window.selectMode = function(mode) {
-  selectedMode = mode;
-  status.innerText = "Modus: " + mode;
-  startBtn.disabled = false;
+window.requestCamera = async function () {
+  try {
+    await navigator.mediaDevices.getUserMedia({ video: true });
+
+    permissionScreen.style.display = "none";
+    ui.classList.remove("hidden");
+
+    status.innerText = "Kamera aktiv – wähle Modus";
+
+  } catch (err) {
+    alert("Kamera Zugriff verweigert!");
+    console.error(err);
+  }
 };
+
+/* =========================
+   STEP 2: MODE
+========================= */
+
+window.selectMode = function (mode) {
+  selectedMode = mode;
+  startBtn.disabled = false;
+
+  status.innerText = "Modus: " + mode;
+};
+
+/* =========================
+   STEP 3: START AR ENGINE
+========================= */
 
 window.startAR = async function () {
   if (!selectedMode) return;
 
   arStarted = true;
-  setState("SCANNING");
 
-  status.innerText = "Starte Kamera...";
+  status.innerText = "Starte AR...";
 
   try {
-    await sceneEl.systems["mindar-image-system"].start();
+    await scene.systems["mindar-image-system"].start();
   } catch (e) {
-    console.error("MindAR start error:", e);
+    console.error(e);
   }
+
+  status.innerText = "Suche Infografik...";
 };
 
 /* =========================
-   STATE MACHINE
+   TRACKING
 ========================= */
 
-function setState(newState) {
-  state = newState;
+anchor.addEventListener("targetFound", () => {
+  status.innerText = "Marker erkannt";
 
-  switch (state) {
-    case "IDLE":
-      status.innerText = "Wähle Modus";
-      break;
+  showContent();
+});
 
-    case "SCANNING":
-      status.innerText = "Suche Infografik...";
-      break;
-
-    case "LOCKED":
-      status.innerText = "Marker erkannt";
-      showContent();
-      break;
-
-    case "LOST":
-      status.innerText = "Marker verloren – Content bleibt";
-      break;
-  }
-}
+anchor.addEventListener("targetLost", () => {
+  status.innerText = "Marker verloren (Content bleibt)";
+});
 
 /* =========================
    CONTENT
@@ -97,37 +102,3 @@ function showContent() {
     info.setAttribute("visible", true);
   }
 }
-
-/* =========================
-   TRACKING EVENTS (FIXED)
-========================= */
-
-anchor.addEventListener("targetFound", () => {
-  if (!arStarted) return;
-
-  setState("LOCKED");
-});
-
-anchor.addEventListener("targetLost", () => {
-  if (!arStarted) return;
-
-  setState("LOST");
-});
-
-/* =========================
-   DEBUG (optional but useful)
-========================= */
-
-sceneEl.addEventListener("arReady", () => {
-  console.log("AR READY");
-});
-
-sceneEl.addEventListener("arError", (e) => {
-  console.log("AR ERROR", e);
-});
-
-/* =========================
-   INIT
-========================= */
-
-setState("IDLE");

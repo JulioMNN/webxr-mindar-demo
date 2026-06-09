@@ -1,16 +1,27 @@
-<a-scene
-  mindar-image="
-    imageTargetSrc: assets/tag17.mind;
-    autoStart: false;
-    uiLoading: yes;
-    uiScanning: yes;
-    uiError: yes;
-  "
-  vr-mode-ui="enabled: false"
-  device-orientation-permission-ui="enabled: true"
-  renderer="colorManagement: true"
-  
-><div id="ui">
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Tag 17 WebXR</title>
+
+  <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+
+  <link rel="stylesheet" href="style.css"/>
+</head>
+
+<body>
+
+<!-- STEP 1: CAMERA PERMISSION SCREEN -->
+<div id="permissionScreen">
+  <h2>AR Experience</h2>
+  <p>Bitte Kamera Zugriff erlauben</p>
+  <button onclick="requestCamera()">Kamera starten</button>
+</div>
+
+<!-- STEP 2: UI MENU -->
+<div id="ui" class="hidden">
   <h3>Tag 17 XR</h3>
 
   <button onclick="selectMode('model')">3D Modell</button>
@@ -23,3 +34,39 @@
 
   <p id="status">Wähle Modus</p>
 </div>
+
+<!-- AR SCENE -->
+<a-scene
+  id="scene"
+  mindar-image="
+    imageTargetSrc: assets/tag17.mind;
+    autoStart: false;
+  "
+  vr-mode-ui="enabled: false"
+  device-orientation-permission-ui="enabled: true"
+>
+
+  <a-assets>
+    <video id="video" src="videos/demo.mp4" loop></video>
+    <a-asset-item id="model" src="models/model.glb"></a-asset-item>
+  </a-assets>
+
+  <a-camera position="0 0 0" look-controls="enabled:false"></a-camera>
+
+  <a-entity mindar-image-target="targetIndex: 0" id="anchor">
+
+    <a-entity id="modelEntity" gltf-model="#model" visible="false"></a-entity>
+
+    <a-video id="videoEntity" src="#video" width="1" height="0.6" visible="false"></a-video>
+
+    <a-plane id="infoEntity" width="1.2" height="0.6" visible="false" color="#222">
+      <a-text value="Tag 17 WebXR Info" color="white" align="center"></a-text>
+    </a-plane>
+
+  </a-entity>
+
+</a-scene>
+
+<script src="app.js"></script>
+</body>
+</html>
