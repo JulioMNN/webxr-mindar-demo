@@ -1,43 +1,93 @@
+/* =========================
+   STATE MACHINE
+========================= */
+
 let state = "IDLE";
 let selectedMode = null;
 let arStarted = false;
+
+/* =========================
+   DOM ELEMENTS
+========================= */
+
+const ui = document.getElementById("ui");
+const status = document.getElementById("status");
 
 const model = document.getElementById("modelEntity");
 const video = document.getElementById("videoEntity");
 const info = document.getElementById("infoEntity");
 
-const status = document.getElementById("status");
-const startBtn = document.getElementById("startBtn");
-
 const videoEl = document.querySelector("#video");
 const anchor = document.querySelector("#anchor");
 
-window.selectMode = function(mode) {
-  selectedMode = mode;
-  status.innerText = "Modus gewählt: " + mode;
+/* =========================
+   UI TIMER (AUTO HIDE)
+========================= */
 
-  if (state === "IDLE") {
-    startBtn.disabled = false;
-  }
+let uiTimer = null;
+
+function showUI() {
+  ui.classList.remove("hide");
+  resetUITimer();
+}
+
+function hideUI() {
+  ui.classList.add("hide");
+}
+
+function resetUITimer() {
+  if (uiTimer) clearTimeout(uiTimer);
+
+  uiTimer = setTimeout(() => {
+    hideUI();
+  }, 10000); // 10 Sekunden
+}
+
+/* =========================
+   INIT UI BEHAVIOR
+========================= */
+
+document.addEventListener("click", showUI);
+document.addEventListener("touchstart", showUI);
+
+/* =========================
+   MODE SELECTION
+========================= */
+
+window.selectMode = function (mode) {
+  selectedMode = mode;
+
+  status.innerText = "Modus: " + mode;
+
+  showUI();
 };
 
-window.startAR = function() {
+/* =========================
+   START AR SESSION
+========================= */
+
+window.startAR = function () {
   if (!selectedMode) return;
 
   arStarted = true;
   setState("SCANNING");
 
-  startBtn.innerText = "AR aktiv";
-  startBtn.disabled = true;
+  status.innerText = "AR aktiv – suche Marker...";
 
   videoEl.load();
+
+  showUI();
 };
+
+/* =========================
+   STATE MACHINE
+========================= */
 
 function setState(newState) {
   state = newState;
   console.log("STATE:", state);
 
-  switch(state) {
+  switch (state) {
     case "IDLE":
       status.innerText = "Bitte Modus wählen";
       break;
@@ -62,6 +112,10 @@ function setState(newState) {
   }
 }
 
+/* =========================
+   CONTENT HANDLING
+========================= */
+
 function showContent() {
   model.setAttribute("visible", false);
   video.setAttribute("visible", false);
@@ -73,7 +127,10 @@ function showContent() {
 
   if (selectedMode === "video") {
     video.setAttribute("visible", true);
-    videoEl.play().catch(()=>{});
+
+    videoEl.play().catch((err) => {
+      console.log("Video blocked:", err);
+    });
   }
 
   if (selectedMode === "info") {
@@ -82,7 +139,7 @@ function showContent() {
 }
 
 /* =========================
-   TRACKING ENGINE
+   MINDAR TRACKING EVENTS
 ========================= */
 
 anchor.addEventListener("targetFound", () => {
@@ -93,6 +150,9 @@ anchor.addEventListener("targetFound", () => {
   } else {
     setState("LOCKED");
   }
+
+  // UI kommt kurz zurück wenn Marker erkannt wird
+  showUI();
 });
 
 anchor.addEventListener("targetLost", () => {
@@ -101,5 +161,12 @@ anchor.addEventListener("targetLost", () => {
   setState("LOST");
 
   // WICHTIG:
-  // Content bleibt sichtbar (kein hide!)
+  // kein hideContent -> sticky AR bleibt aktiv
 });
+
+/* =========================
+   INITIAL STATE
+========================= */
+
+setState("IDLE");
+showUI();
