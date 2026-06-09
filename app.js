@@ -1,62 +1,105 @@
-let currentMode = null;
-let lastPose = null;
+let state = "IDLE";
+let selectedMode = null;
+let arStarted = false;
 
 const model = document.getElementById("modelEntity");
 const video = document.getElementById("videoEntity");
 const info = document.getElementById("infoEntity");
-const status = document.getElementById("status");
 
+const status = document.getElementById("status");
+const startBtn = document.getElementById("startBtn");
+
+const videoEl = document.querySelector("#video");
 const anchor = document.querySelector("#anchor");
 
-// MODE SELECTION
-window.setMode = function(mode) {
-  currentMode = mode;
+window.selectMode = function(mode) {
+  selectedMode = mode;
+  status.innerText = "Modus gewählt: " + mode;
 
+  if (state === "IDLE") {
+    startBtn.disabled = false;
+  }
+};
+
+window.startAR = function() {
+  if (!selectedMode) return;
+
+  arStarted = true;
+  setState("SCANNING");
+
+  startBtn.innerText = "AR aktiv";
+  startBtn.disabled = true;
+
+  videoEl.load();
+};
+
+function setState(newState) {
+  state = newState;
+  console.log("STATE:", state);
+
+  switch(state) {
+    case "IDLE":
+      status.innerText = "Bitte Modus wählen";
+      break;
+
+    case "SCANNING":
+      status.innerText = "Suche Infografik (Tag 17)...";
+      break;
+
+    case "LOCKED":
+      status.innerText = "Marker erkannt";
+      showContent();
+      break;
+
+    case "LOST":
+      status.innerText = "Marker verloren – Content bleibt sichtbar";
+      break;
+
+    case "RECOVERY":
+      status.innerText = "Marker wieder erkannt – Repositionierung";
+      showContent();
+      break;
+  }
+}
+
+function showContent() {
   model.setAttribute("visible", false);
   video.setAttribute("visible", false);
   info.setAttribute("visible", false);
 
-  status.innerText = "Modus: " + mode;
-};
+  if (selectedMode === "model") {
+    model.setAttribute("visible", true);
+  }
 
-// TRACKING EVENTS
+  if (selectedMode === "video") {
+    video.setAttribute("visible", true);
+    videoEl.play().catch(()=>{});
+  }
+
+  if (selectedMode === "info") {
+    info.setAttribute("visible", true);
+  }
+}
+
+/* =========================
+   TRACKING ENGINE
+========================= */
+
 anchor.addEventListener("targetFound", () => {
-  status.innerText = "Marker erkannt";
+  if (!arStarted) return;
 
-  // restore last mode content
-  showCurrentMode();
-
-  // re-apply last known pose if exists
-  if (lastPose) {
-    anchor.object3D.position.copy(lastPose.position);
-    anchor.object3D.quaternion.copy(lastPose.quaternion);
+  if (state === "SCANNING" || state === "LOST") {
+    setState("RECOVERY");
+  } else {
+    setState("LOCKED");
   }
 });
 
 anchor.addEventListener("targetLost", () => {
-  status.innerText = "Marker verloren – Content bleibt aktiv";
+  if (!arStarted) return;
 
-  // SAVE LAST POSE (sticky behavior)
-  lastPose = {
-    position: anchor.object3D.position.clone(),
-    quaternion: anchor.object3D.quaternion.clone()
-  };
+  setState("LOST");
 
-  // IMPORTANT: DO NOT HIDE CONTENT
+  // WICHTIG:
+  // Content bleibt sichtbar (kein hide!)
 });
-
-// SHOW CONTENT
-function showCurrentMode() {
-  if (currentMode === "model") {
-    model.setAttribute("visible", true);
-  }
-
-  if (currentMode === "video") {
-    video.setAttribute("visible", true);
-    document.querySelector("#video").play();
-  }
-
-  if (currentMode === "info") {
-    info.setAttribute("visible", true);
-  }
-}
