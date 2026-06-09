@@ -4,7 +4,7 @@ body {
   font-family: Arial;
 }
 
-/* Permission Screen */
+/* CAMERA SCREEN */
 #permissionScreen {
   position: fixed;
   width: 100%;
@@ -20,15 +20,18 @@ body {
   z-index: 9999;
 }
 
-/* UI */
+/* UI PANEL */
 #ui {
   position: fixed;
   top: 10px;
   left: 10px;
+
   background: rgba(0,0,0,0.7);
   color: white;
+
   padding: 10px;
   border-radius: 10px;
+
   z-index: 10;
 }
 
@@ -37,7 +40,6 @@ body {
 }
 
 button {
-  display: block;
-  margin-top: 5px;
   width: 160px;
+  margin-top: 6px;
 }

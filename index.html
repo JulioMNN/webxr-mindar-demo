@@ -13,14 +13,14 @@
 
 <body>
 
-<!-- STEP 1: CAMERA PERMISSION SCREEN -->
+<!-- CAMERA PERMISSION -->
 <div id="permissionScreen">
-  <h2>AR Experience</h2>
-  <p>Bitte Kamera Zugriff erlauben</p>
-  <button onclick="requestCamera()">Kamera starten</button>
+  <h2>WebXR Experience</h2>
+  <p>Kamera Zugriff erforderlich</p>
+  <button onclick="requestCamera()">Start</button>
 </div>
 
-<!-- STEP 2: UI MENU -->
+<!-- UI -->
 <div id="ui" class="hidden">
   <h3>Tag 17 XR</h3>
 
@@ -28,7 +28,7 @@
   <button onclick="selectMode('video')">Video</button>
   <button onclick="selectMode('info')">Info</button>
 
-  <button onclick="startAR()" id="startBtn" disabled>
+  <button id="startBtn" onclick="startAR()" disabled>
     AR starten
   </button>
 
@@ -43,11 +43,20 @@
     autoStart: false;
   "
   vr-mode-ui="enabled: false"
-  device-orientation-permission-ui="enabled: true"
 >
 
   <a-assets>
-    <video id="video" src="videos/demo.mp4" loop></video>
+    <!-- VIDEO FIXED -->
+    <video
+      id="video"
+      src="videos/demo.mp4"
+      loop
+      muted
+      playsinline
+      webkit-playsinline
+      crossorigin="anonymous"
+    ></video>
+
     <a-asset-item id="model" src="models/model.glb"></a-asset-item>
   </a-assets>
 
@@ -57,9 +66,21 @@
 
     <a-entity id="modelEntity" gltf-model="#model" visible="false"></a-entity>
 
-    <a-video id="videoEntity" src="#video" width="1" height="0.6" visible="false"></a-video>
+    <a-video
+      id="videoEntity"
+      src="#video"
+      width="1"
+      height="0.6"
+      visible="false"
+    ></a-video>
 
-    <a-plane id="infoEntity" width="1.2" height="0.6" visible="false" color="#222">
+    <a-plane
+      id="infoEntity"
+      width="1.2"
+      height="0.6"
+      color="#222"
+      visible="false"
+    >
       <a-text value="Tag 17 WebXR Info" color="white" align="center"></a-text>
     </a-plane>
 

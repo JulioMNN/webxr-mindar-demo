@@ -1,4 +1,3 @@
-
 let selectedMode = null;
 let arStarted = false;
 
@@ -17,7 +16,7 @@ const info = document.querySelector("#infoEntity");
 const videoEl = document.querySelector("#video");
 
 /* =========================
-   STEP 1: CAMERA
+   CAMERA PERMISSION FIRST
 ========================= */
 
 window.requestCamera = async function () {
@@ -27,16 +26,15 @@ window.requestCamera = async function () {
     permissionScreen.style.display = "none";
     ui.classList.remove("hidden");
 
-    status.innerText = "Kamera aktiv – wähle Modus";
+    status.innerText = "Kamera bereit";
 
-  } catch (err) {
-    alert("Kamera Zugriff verweigert!");
-    console.error(err);
+  } catch (e) {
+    alert("Kamera Zugriff verweigert");
   }
 };
 
 /* =========================
-   STEP 2: MODE
+   MODE SELECTION
 ========================= */
 
 window.selectMode = function (mode) {
@@ -47,7 +45,7 @@ window.selectMode = function (mode) {
 };
 
 /* =========================
-   STEP 3: START AR ENGINE
+   START AR ENGINE
 ========================= */
 
 window.startAR = async function () {
@@ -60,7 +58,7 @@ window.startAR = async function () {
   try {
     await scene.systems["mindar-image-system"].start();
   } catch (e) {
-    console.error(e);
+    console.error("MindAR error:", e);
   }
 
   status.innerText = "Suche Infografik...";
@@ -72,16 +70,15 @@ window.startAR = async function () {
 
 anchor.addEventListener("targetFound", () => {
   status.innerText = "Marker erkannt";
-
   showContent();
 });
 
 anchor.addEventListener("targetLost", () => {
-  status.innerText = "Marker verloren (Content bleibt)";
+  status.innerText = "Marker verloren – Content bleibt";
 });
 
 /* =========================
-   CONTENT
+   CONTENT SYSTEM
 ========================= */
 
 function showContent() {
@@ -95,7 +92,21 @@ function showContent() {
 
   if (selectedMode === "video") {
     video.setAttribute("visible", true);
-    videoEl.play().catch(()=>{});
+
+    videoEl.muted = true;
+    videoEl.currentTime = 0;
+
+    const p = videoEl.play();
+
+    if (p) {
+      p.catch(err => {
+        console.log("Video autoplay blocked:", err);
+
+        setTimeout(() => {
+          videoEl.play().catch(()=>{});
+        }, 300);
+      });
+    }
   }
 
   if (selectedMode === "info") {
