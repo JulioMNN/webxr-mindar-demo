@@ -1,9 +1,8 @@
 let selectedMode = null;
 let arStarted = false;
 
-const permissionScreen = document.getElementById("permissionScreen");
-const ui = document.getElementById("ui");
-const status = document.getElementById("status");
+const stateEl = document.getElementById("state");
+const qualityEl = document.getElementById("quality");
 const startBtn = document.getElementById("startBtn");
 
 const scene = document.querySelector("#scene");
@@ -16,69 +15,62 @@ const info = document.querySelector("#infoEntity");
 const videoEl = document.querySelector("#video");
 
 /* =========================
-   CAMERA PERMISSION FIRST
+   MODE SELECT
 ========================= */
 
-window.requestCamera = async function () {
-  try {
-    await navigator.mediaDevices.getUserMedia({ video: true });
-
-    permissionScreen.style.display = "none";
-    ui.classList.remove("hidden");
-
-    status.innerText = "Kamera bereit";
-
-  } catch (e) {
-    alert("Kamera Zugriff verweigert");
-  }
-};
-
-/* =========================
-   MODE SELECTION
-========================= */
-
-window.selectMode = function (mode) {
+window.selectMode = function(mode) {
   selectedMode = mode;
   startBtn.disabled = false;
 
-  status.innerText = "Modus: " + mode;
+  setState("MODE: " + mode.toUpperCase());
 };
 
 /* =========================
-   START AR ENGINE
+   START AR
 ========================= */
 
-window.startAR = async function () {
+window.startAR = async function() {
   if (!selectedMode) return;
 
   arStarted = true;
 
-  status.innerText = "Starte AR...";
+  setState("SCANNING");
 
   try {
     await scene.systems["mindar-image-system"].start();
   } catch (e) {
-    console.error("MindAR error:", e);
+    console.log(e);
   }
-
-  status.innerText = "Suche Infografik...";
 };
 
 /* =========================
-   TRACKING
+   STATE ENGINE (INDUSTRY STYLE)
+========================= */
+
+function setState(text) {
+  stateEl.innerText = text;
+}
+
+/* =========================
+   TRACKING EVENTS
 ========================= */
 
 anchor.addEventListener("targetFound", () => {
-  status.innerText = "Marker erkannt";
+  setState("TRACKING");
+
+  qualityEl.className = "good";
+
   showContent();
 });
 
 anchor.addEventListener("targetLost", () => {
-  status.innerText = "Marker verloren – Content bleibt";
+  setState("LOST");
+
+  qualityEl.className = "bad";
 });
 
 /* =========================
-   CONTENT SYSTEM
+   CONTENT
 ========================= */
 
 function showContent() {
@@ -95,18 +87,7 @@ function showContent() {
 
     videoEl.muted = true;
     videoEl.currentTime = 0;
-
-    const p = videoEl.play();
-
-    if (p) {
-      p.catch(err => {
-        console.log("Video autoplay blocked:", err);
-
-        setTimeout(() => {
-          videoEl.play().catch(()=>{});
-        }, 300);
-      });
-    }
+    videoEl.play().catch(()=>{});
   }
 
   if (selectedMode === "info") {
