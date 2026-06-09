@@ -1,13 +1,25 @@
-<div id="ui" class="panel show">
-
+<a-scene
+  mindar-image="
+    imageTargetSrc: assets/tag17.mind;
+    autoStart: false;
+    uiLoading: yes;
+    uiScanning: yes;
+    uiError: yes;
+  "
+  vr-mode-ui="enabled: false"
+  device-orientation-permission-ui="enabled: true"
+  renderer="colorManagement: true"
+  
+><div id="ui">
   <h3>Tag 17 XR</h3>
 
-  <p>Wähle Inhalt:</p>
-
-  <button onclick="selectMode('model')">3D</button>
+  <button onclick="selectMode('model')">3D Modell</button>
   <button onclick="selectMode('video')">Video</button>
   <button onclick="selectMode('info')">Info</button>
 
-  <p id="status">Idle</p>
+  <button onclick="startAR()" id="startBtn" disabled>
+    AR starten
+  </button>
 
+  <p id="status">Wähle Modus</p>
 </div>

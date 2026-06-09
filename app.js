@@ -1,82 +1,51 @@
+
 /* =========================
-   STATE MACHINE
+   STATE
 ========================= */
 
-let state = "IDLE";
 let selectedMode = null;
 let arStarted = false;
+let state = "IDLE";
 
 /* =========================
-   DOM ELEMENTS
+   ELEMENTS
 ========================= */
 
 const ui = document.getElementById("ui");
 const status = document.getElementById("status");
+const startBtn = document.getElementById("startBtn");
 
 const model = document.getElementById("modelEntity");
 const video = document.getElementById("videoEntity");
 const info = document.getElementById("infoEntity");
 
 const videoEl = document.querySelector("#video");
+const sceneEl = document.querySelector("a-scene");
 const anchor = document.querySelector("#anchor");
 
 /* =========================
-   UI TIMER (AUTO HIDE)
+   UI LOGIC
 ========================= */
 
-let uiTimer = null;
-
-function showUI() {
-  ui.classList.remove("hide");
-  resetUITimer();
-}
-
-function hideUI() {
-  ui.classList.add("hide");
-}
-
-function resetUITimer() {
-  if (uiTimer) clearTimeout(uiTimer);
-
-  uiTimer = setTimeout(() => {
-    hideUI();
-  }, 10000); // 10 Sekunden
-}
-
-/* =========================
-   INIT UI BEHAVIOR
-========================= */
-
-document.addEventListener("click", showUI);
-document.addEventListener("touchstart", showUI);
-
-/* =========================
-   MODE SELECTION
-========================= */
-
-window.selectMode = function (mode) {
+window.selectMode = function(mode) {
   selectedMode = mode;
-
   status.innerText = "Modus: " + mode;
-
-  showUI();
+  startBtn.disabled = false;
 };
 
-/* =========================
-   START AR SESSION
-========================= */
-
-window.startAR = function () {
+window.startAR = async function () {
   if (!selectedMode) return;
 
   arStarted = true;
   setState("SCANNING");
 
-  status.innerText = "AR aktiv – suche Marker...";
+  status.innerText = "Starte Kamera...";
 
-  videoEl.load();
-
-  showUI();
+  try {
+    await sceneEl.systems["mindar-image-system"].start();
+  } catch (e) {
+    console.error("MindAR start error:", e);
+  }
 };
 
 /* =========================
@@ -85,15 +54,14 @@ window.startAR = function () {
 
 function setState(newState) {
   state = newState;
-  console.log("STATE:", state);
 
   switch (state) {
     case "IDLE":
-      status.innerText = "Bitte Modus wählen";
+      status.innerText = "Wähle Modus";
       break;
 
     case "SCANNING":
-      status.innerText = "Suche Infografik (Tag 17)...";
+      status.innerText = "Suche Infografik...";
       break;
 
     case "LOCKED":
@@ -102,18 +70,13 @@ function setState(newState) {
       break;
 
     case "LOST":
-      status.innerText = "Marker verloren – Content bleibt sichtbar";
-      break;
-
-    case "RECOVERY":
-      status.innerText = "Marker wieder erkannt – Repositionierung";
-      showContent();
+      status.innerText = "Marker verloren – Content bleibt";
       break;
   }
 }
 
 /* =========================
-   CONTENT HANDLING
+   CONTENT
 ========================= */
 
 function showContent() {
@@ -127,10 +90,7 @@ function showContent() {
 
   if (selectedMode === "video") {
     video.setAttribute("visible", true);
-
-    videoEl.play().catch((err) => {
-      console.log("Video blocked:", err);
-    });
+    videoEl.play().catch(()=>{});
   }
 
   if (selectedMode === "info") {
@@ -139,34 +99,35 @@ function showContent() {
 }
 
 /* =========================
-   MINDAR TRACKING EVENTS
+   TRACKING EVENTS (FIXED)
 ========================= */
 
 anchor.addEventListener("targetFound", () => {
   if (!arStarted) return;
 
-  if (state === "SCANNING" || state === "LOST") {
-    setState("RECOVERY");
-  } else {
-    setState("LOCKED");
-  }
-
-  // UI kommt kurz zurück wenn Marker erkannt wird
-  showUI();
+  setState("LOCKED");
 });
 
 anchor.addEventListener("targetLost", () => {
   if (!arStarted) return;
 
   setState("LOST");
-
-  // WICHTIG:
-  // kein hideContent -> sticky AR bleibt aktiv
 });
 
 /* =========================
-   INITIAL STATE
+   DEBUG (optional but useful)
+========================= */
+
+sceneEl.addEventListener("arReady", () => {
+  console.log("AR READY");
+});
+
+sceneEl.addEventListener("arError", (e) => {
+  console.log("AR ERROR", e);
+});
+
+/* =========================
+   INIT
 ========================= */
 
 setState("IDLE");
-showUI();
