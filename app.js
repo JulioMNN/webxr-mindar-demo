@@ -1,8 +1,9 @@
 let selectedMode = null;
 let arStarted = false;
 
-const stateEl = document.getElementById("state");
-const qualityEl = document.getElementById("quality");
+const permissionScreen = document.getElementById("permissionScreen");
+const ui = document.getElementById("ui");
+const status = document.getElementById("status");
 const startBtn = document.getElementById("startBtn");
 
 const scene = document.querySelector("#scene");
@@ -15,62 +16,69 @@ const info = document.querySelector("#infoEntity");
 const videoEl = document.querySelector("#video");
 
 /* =========================
-   MODE SELECT
+   CAMERA PERMISSION FIRST
 ========================= */
 
-window.selectMode = function(mode) {
-  selectedMode = mode;
-  startBtn.disabled = false;
-
-  setState("MODE: " + mode.toUpperCase());
-};
-
-/* =========================
-   START AR
-========================= */
-
-window.startAR = async function() {
-  if (!selectedMode) return;
-
-  arStarted = true;
-
-  setState("SCANNING");
-
+window.requestCamera = async function () {
   try {
-    await scene.systems["mindar-image-system"].start();
+    await navigator.mediaDevices.getUserMedia({ video: true });
+
+    permissionScreen.style.display = "none";
+    ui.classList.remove("hidden");
+
+    status.innerText = "Kamera bereit";
+
   } catch (e) {
-    console.log(e);
+    alert("Kamera Zugriff verweigert");
   }
 };
 
 /* =========================
-   STATE ENGINE (INDUSTRY STYLE)
+   MODE SELECTION
 ========================= */
 
-function setState(text) {
-  stateEl.innerText = text;
-}
+window.selectMode = function (mode) {
+  selectedMode = mode;
+  startBtn.disabled = false;
+
+  status.innerText = "Modus: " + mode;
+};
 
 /* =========================
-   TRACKING EVENTS
+   START AR ENGINE
+========================= */
+
+window.startAR = async function () {
+  if (!selectedMode) return;
+
+  arStarted = true;
+
+  status.innerText = "Starte AR...";
+
+  try {
+    await scene.systems["mindar-image-system"].start();
+  } catch (e) {
+    console.error("MindAR error:", e);
+  }
+
+  status.innerText = "Suche Infografik...";
+};
+
+/* =========================
+   TRACKING
 ========================= */
 
 anchor.addEventListener("targetFound", () => {
-  setState("TRACKING");
-
-  qualityEl.className = "good";
-
+  status.innerText = "Marker erkannt";
   showContent();
 });
 
 anchor.addEventListener("targetLost", () => {
-  setState("LOST");
-
-  qualityEl.className = "bad";
+  status.innerText = "Marker verloren – Content bleibt";
 });
 
 /* =========================
-   CONTENT
+   CONTENT SYSTEM
 ========================= */
 
 function showContent() {
@@ -87,7 +95,18 @@ function showContent() {
 
     videoEl.muted = true;
     videoEl.currentTime = 0;
-    videoEl.play().catch(()=>{});
+
+    const p = videoEl.play();
+
+    if (p) {
+      p.catch(err => {
+        console.log("Video autoplay blocked:", err);
+
+        setTimeout(() => {
+          videoEl.play().catch(()=>{});
+        }, 300);
+      });
+    }
   }
 
   if (selectedMode === "info") {
